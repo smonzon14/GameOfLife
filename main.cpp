@@ -7,6 +7,8 @@
 #define FIELD_DIM 500
 #define WIDTH  10.0
 #define HEIGHT 10.0
+#define CELL_W WIDTH/FIELD_DIM
+#define CELL_H HEIGHT/FIELD_DIM
 #define SEED_DIM FIELD_DIM
 
 typedef bool field_array[FIELD_DIM][FIELD_DIM];
@@ -57,25 +59,73 @@ void updateField(){
 }
 void display(void)
 {
- glClear( GL_COLOR_BUFFER_BIT);
+ glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+ 
  for(int x = 0; x < FIELD_DIM; ++x){
    for(int y = 0; y < FIELD_DIM; ++y){
 			if(field[x][y]){
         born[x][y] ? glColor3fv(c2) : glColor3fv(c1);
 				glBegin(GL_POLYGON);
-				glVertex3f(WIDTH * x / FIELD_DIM, HEIGHT * y/FIELD_DIM, 0.0);
-				glVertex3f(WIDTH * (x+1) / FIELD_DIM, HEIGHT * y/FIELD_DIM, 0.0);
-        glVertex3f(WIDTH * (x+1) / FIELD_DIM, HEIGHT * (y+1)/FIELD_DIM, 0.0);
-				glVertex3f(WIDTH * x / FIELD_DIM, HEIGHT * (y+1)/FIELD_DIM, 0.0);
+        
+        //Front Face
+				glVertex3f(CELL_W * x, CELL_H * y, 0.0);
+				glVertex3f(CELL_W * (x+1), CELL_H * y, 0.0);
+        glVertex3f(CELL_W * (x+1), CELL_H * (y+1), 0.0);
+				glVertex3f(CELL_W * x, CELL_H * (y+1), 0.0);
+        
+        //Back Face
+        glVertex3f(CELL_W * x, CELL_H * y, -CELL_W);
+				glVertex3f(CELL_W * (x+1), CELL_H * y, -CELL_W);
+        glVertex3f(CELL_W * (x+1), CELL_H * (y+1), -CELL_W);
+				glVertex3f(CELL_W * x, CELL_H * (y+1), -CELL_W);
+        
+        //Top
+        glVertex3f(CELL_W * x, CELL_H * y, 0.0);
+				glVertex3f(CELL_W * (x+1), CELL_H * y, 0.0);
+        glVertex3f(CELL_W * x, CELL_H * y, -CELL_W);
+				glVertex3f(CELL_W * (x+1), CELL_H * y, -CELL_W);
+
+        //Bottom
+        glVertex3f(CELL_W * x, CELL_H * (y+1), 0.0);
+				glVertex3f(CELL_W * (x+1), CELL_H * (y+1), 0.0);
+        glVertex3f(CELL_W * x, CELL_H * (y+1), -CELL_W);
+				glVertex3f(CELL_W * (x+1), CELL_H * (y+1), -CELL_W);
+
+        //Left
+        glVertex3f(CELL_W * x, CELL_H * y, 0.0);
+				glVertex3f(CELL_W * x, CELL_H * (y+1), 0.0);
+        glVertex3f(CELL_W * x, CELL_H * (y+1), -CELL_W);
+				glVertex3f(CELL_W * x, CELL_H * y, -CELL_W);
+
+        //Right
+        glVertex3f(CELL_W * (x+1), CELL_H * y, 0.0);
+				glVertex3f(CELL_W * (x+1), CELL_H * (y+1), 0.0);
+        glVertex3f(CELL_W * (x+1), CELL_H * (y+1), -CELL_W);
+				glVertex3f(CELL_W * (x+1), CELL_H * y, -CELL_W);
+
 				glEnd();
 			}
 		}
    }
+  
   glFlush();
   glutPostRedisplay();
 }
 
-
+void reshape (int w, int h)
+{
+   glViewport (0, 0, (GLsizei) w, (GLsizei) h);
+   glMatrixMode (GL_PROJECTION);
+   glLoadIdentity();
+   if (w <= h)
+      glOrtho (-1.5, 1.5, -1.5*(GLfloat)h/(GLfloat)w,
+         1.5*(GLfloat)h/(GLfloat)w, -10.0, 10.0);
+   else
+      glOrtho (-1.5*(GLfloat)w/(GLfloat)h,
+         1.5*(GLfloat)w/(GLfloat)h, -1.5, 1.5, -10.0, 10.0);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+}
 
 int main(int argc, char **argv)
 {
@@ -86,13 +136,33 @@ int main(int argc, char **argv)
   glutInitWindowPosition(100,100);
   glutInitWindowSize(800,800);
   glutCreateWindow ("Game Of Life");
+  
+  // GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+  // GLfloat mat_shininess[] = { 50.0 };
+  // GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+  // glClearColor (0.0, 0.0, 0.0, 0.0);
+  // glShadeModel (GL_SMOOTH);
+
+  // glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  // glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+  // glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+  // glEnable(GL_LIGHTING);
+  // glEnable(GL_LIGHT0);
+  glEnable(GL_DEPTH_TEST);
   glClearColor(0.0, 0.0, 0.0, 0.0);         
   glMatrixMode(GL_PROJECTION);              
   glLoadIdentity();                           
-  glOrtho(0.0, WIDTH, 0.0, HEIGHT, -1.0, 1.0);  
+  glOrtho(0.0, WIDTH, 0.0, HEIGHT, -5.0, 5.0);  
+  
+  // glRotatef(-40, 1.0f, 1.0f, 0.0f);
+  // // glRotatef(-20, 1.0f, 0.0f, 0.0f);
+  // glTranslatef(0, 1.0, 0);
+  // move to center of circle 
   glutDisplayFunc(display);
   glutIdleFunc(updateField);
+  //glutReshapeFunc(reshape);
   glutMainLoop();
-
+  
   return 0;
 }
